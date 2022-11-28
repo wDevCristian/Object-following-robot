@@ -18,7 +18,7 @@
 #define min_x_working_spectrum 20  // min left position of x
 #define max_x_working_spectrum 316 // max left position of x
 
-#define speed_value 1023 // value to move backwards 
+#define speed_value 255 // value to move backwards 
 
 #define pin_en_a 9            // roata Dreapta
 #define pin_en_b 10           // roata Stanga
@@ -40,9 +40,9 @@ Pixy2 pixy;
 
 void setup() {
 
-  // setare frecventa pin D3, D11
-  // TCCR1B = 0b00000001;
-  // TCCR1A = 0b00000011;
+  // setare frecventa pin D9, D10
+  //TCCR1B = 0b00000100;
+  //TCCR1A = 0b00000001;
 
 
   Serial.begin(115200);
@@ -89,7 +89,7 @@ void  move_x()
    if(obj_x <=  min_x)
     {
       // object is at left 
-      mapped_x = map(obj_x, min_x_working_spectrum , min_x, 0, speed_value);
+      mapped_x = map(obj_x, min_x_working_spectrum , min_x, speed_value, 0);
       
       // set left wheel 
       digitalWrite(pin_forward_left, LOW);
@@ -140,7 +140,7 @@ void process_data()
 {
   obj_x = pixy.ccc.blocks[i].m_x;
   obj_width = pixy.ccc.blocks[i].m_width; 
-  if (obj_width > max_width)
+  if (obj_width >= max_width)
   {
     // case when object is too close
     // move backwards
@@ -153,7 +153,7 @@ void process_data()
     digitalWrite(pin_forward_right, LOW);
     digitalWrite(pin_backwards_right, HIGH); 
 
-    speed = speed;
+    speed = speed_value;
     
     // set the direction for wheels acording to x position of object
     if(obj_x <=  min_x)
@@ -167,15 +167,15 @@ void process_data()
       pow_left_wheel = speed;
       pow_right_wheel = speed;
     }
-    else 
+    else if(obj_x>max_x)
     {
-      mapped_x = map(obj_x, max_x , max_x_working_spectrum, speed_value, 0);
+      mapped_x = map(obj_x, max_x , max_x_working_spectrum, 0, speed_value);
       pow_right_wheel = speed - mapped_x;
       pow_left_wheel = speed;
     }
     // end backwards
   }
-  else if(obj_width < min_width)
+  else if(obj_width <= min_width)
   {
     // case when object is too far
     // move forward
@@ -202,22 +202,22 @@ void process_data()
       pow_left_wheel = speed;
       pow_right_wheel = speed;
     }
-    else 
+    else if(obj_x>max_x)
     {
-      mapped_x = map(obj_x, max_x , max_x_working_spectrum, speed_value, 0);
+      mapped_x = map(obj_x, max_x, max_x_working_spectrum, 0, speed_value);
       pow_right_wheel = speed - mapped_x;
       pow_left_wheel = speed;
     }
     //end forward
   }
-  else{
+  else if(obj_width<min_width && obj_width>max_width){
     // case when object is at normal distance
     pow_left_wheel = 0;
     pow_right_wheel = 0;
     move_x();
   }
 
-  //limit();
+  limit();
 }
 
 void loop() {
