@@ -38,6 +38,38 @@ int i = 0;
 
 Pixy2 pixy;
 
+int D_W[] = {0, 40, 60, 105, 145, 175, 225, 240, 255, 270, 316};
+int D_X[] = {0, 15, 40, 65, 90, 140, 190, 220, 250, 275, 316};
+
+int R_W[] = {255, 255, 255, 220, 127, 0, 0, 127, 220, 255, 255};
+int R_X[] = {255, 255, 255, 220, 127, 0, 0, 127, 220, 255, 255};
+
+int binarySearch(int arr[], int l, int r, int x)
+{
+    if (r >= l) {
+
+        int mid = l + (r - l) / 2;
+ 
+        // If the element is present at the middle
+        // itself
+        if (arr[mid] == x)
+            return mid;
+ 
+        // If element is smaller than mid, then
+        // it can only be present in left subarray
+        if (arr[mid] > x)
+            return binarySearch(arr, l, mid - 1, x);
+ 
+        // Else the element can only be present
+        // in right subarray
+        return binarySearch(arr, mid + 1, r, x);
+    }
+ 
+    // We reach here when element is not
+    // present in array
+    return l;
+}
+
 void setup() {
 
   // setare frecventa pin D9, D10
@@ -45,7 +77,7 @@ void setup() {
   //TCCR1A = 0b00000001;
 
 
-  Serial.begin(115200);
+  Serial.begin(9600);
   pixy.init();
 
   pinMode(pin_forward_right, OUTPUT);
@@ -188,13 +220,18 @@ void process_data()
     digitalWrite(pin_forward_right, HIGH);
     digitalWrite(pin_backwards_right, LOW); 
 
-    speed = map(obj_width, min_width_working_spectrum , min_width, speed_value , 0  );
+    int pos_x = binarySearch(D_X, 0, 10, obj_x);
+    int pos_w = binarySearch(D_W, 0, 10, obj_width);
+    float interp_x = R_X[pos_x - 1] + float((obj_x - D_X[pos_x - 1])) / float((D_X[pos_x] - D_X[pos_x - 1])) * (R_X[pos_x] - R_X[pos_x - 1]);
+    float interp_w = R_W[pos_w - 1] + (float((obj_width - D_W[pos_w - 1])) / float((D_W[pos_w] - D_W[pos_w - 1]))) * (R_W[pos_w] - R_W[pos_w - 1]);
+
+    speed = interp_w ;// R_W
     
     // set the direction for wheels acording to x position of object
     if(obj_x <=  min_x)
     {
-      mapped_x = map(obj_x, min_x_working_spectrum , min_x, speed_value, 0);
-      pow_left_wheel = speed - mapped_x;
+      //mapped_x = map(obj_x, min_x_working_spectrum , min_x, speed_value, 0); // R_X
+      pow_left_wheel = speed - interp_x;
       pow_right_wheel = speed;
     }
     else if (obj_x>min_x && obj_x <= max_x)
@@ -204,8 +241,8 @@ void process_data()
     }
     else if(obj_x>max_x)
     {
-      mapped_x = map(obj_x, max_x, max_x_working_spectrum, 0, speed_value);
-      pow_right_wheel = speed - mapped_x;
+      //mapped_x = map(obj_x, max_x, max_x_working_spectrum, 0, speed_value);
+      pow_right_wheel = speed - interp_x;
       pow_left_wheel = speed;
     }
     //end forward
@@ -235,6 +272,12 @@ void loop() {
     Serial.print(pow_left_wheel);
     Serial.print(" Right_Speed: ");
     Serial.print(pow_right_wheel);
+
+    // Serial.print("X:");
+    // Serial.print(obj_x);
+    // Serial.print(",");
+    // Serial.print("Distance:");
+    // Serial.println(obj_width);
   }
   else
   {
@@ -247,5 +290,7 @@ void loop() {
   // set speed for wheels
   analogWrite(pin_en_a, pow_right_wheel);
   analogWrite(pin_en_b, pow_left_wheel);
+  // analogWrite(pin_en_a, 0);
+  // analogWrite(pin_en_b, 0);
   
 }
