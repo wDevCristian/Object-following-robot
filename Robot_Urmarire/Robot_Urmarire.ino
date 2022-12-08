@@ -1,7 +1,7 @@
 #include <Pixy2.h>
 #define DELTA 25
-#define MIN_SPEED_VAL 40
-#define K 2
+#define MIN_SPEED_VAL 55
+#define K 1
 
 #define min_width 70
 #define normal_width 90
@@ -17,7 +17,7 @@
 #define min_x_working_spectrum 20  // min left position of x
 #define max_x_working_spectrum 316 // max left position of x
 
-#define speed_value 150 
+#define speed_value 200 
 
 #define pin_en_a 9            // roata Dreapta
 #define pin_en_b 10           // roata Stanga
@@ -40,71 +40,29 @@ float interp_w;
 Pixy2 pixy;
 
 // int D_W[] = {0,   40,  60,  105, 145, 175, 225, 240, 255, 270, 316};
-int D_W[] = {0,   20,  30,  40,  60,   min_width, max_width, 190, 240, 280, 316};
-int D_X[] = {0,   15,  40,  65,  90,    min_x,        max_x, 220, 250, 275, 316};
+int D_W[] = {0,   20,  30,  40,  60,   min_width,          max_width,   190,  240, 280, 316};
+int D_X[] = {0,   15,  40,  65,  90,    min_x,               max_x,     220,  250, 275, 316};
 
-int R_W[] = {220, 220, 150, 110,  70,      31,         31,    70,  86,  91, 101};
-int R_X[] = {100, 100,  90, 85,   60,      30,         30,    60,  85,  90, 100};
+int R_W[] = {220, 220, 150, 110, 70,  MIN_SPEED_VAL,    MIN_SPEED_VAL,   70,  86,   91, 101};
+int R_X[] = {80,  80,  80,  80,  70,  MIN_SPEED_VAL,    MIN_SPEED_VAL,   70,  80,   80,  80};
 
 int filterExpMovingAverage(int value, bool isWidth) {
   static int filteredValueWidth = 0;
   static int filteredValueX = 0;
 
   if(isWidth) {
-    //if((filteredValueWidth-value) >= 20)
       filteredValueWidth = (filteredValueWidth >> 1) + (value >> 1);
-     // filteredValueWidth += ((value << 4) - filteredValueWidth) >> 1;
-//else
-     //filteredValueWidth += ((value << 4) - filteredValueWidth) >> K_COEF;
-    
     return filteredValueWidth;
   } else {
-    // if((filteredValueX-value) >= 10)
-      // filteredValueX += ((value << 4) - filteredValueX) >> 1;
-    // else
-      //filteredValueX += ((value << 4) - filteredValueX) >> K_COEF;
-    
       filteredValueX = (filteredValueX >> 1) + (value >> 1);
     return filteredValueX;
   }
 }
-int filterExpFrontZone(int value) {
-  static int filteredValue = 0;
-
-  filteredValue += ((value << 4) - filteredValue) >> K;
-  return (filteredValue >> 4);
-}
-int binarySearch(int arr[], int l, int r, int x)
-{
-    if (r >= l) {
-
-        int mid = l + (r - l) / 2;
- 
-        // If the element is present at the middle
-        // itself
-        if (arr[mid] == x)
-            return mid;
- 
-        // If element is smaller than mid, then
-        // it can only be present in left subarray
-        if (arr[mid] > x)
-            return binarySearch(arr, l, mid - 1, x);
- 
-        // Else the element can only be present
-        // in right subarray
-        return binarySearch(arr, mid + 1, r, x);
-    }
- 
-    // We reach here when element is not
-    // present in array
-    return l;
-}
-
 void setup() {
 
   // setare frecventa pin D9, D10
-  //TCCR1B = 0b00000100;
-  //TCCR1A = 0b00000001;
+  TCCR1A = 0b00000001;
+  TCCR1B = 0b00001011;
 
 
   Serial.begin(9600);
@@ -124,6 +82,77 @@ void setup() {
   digitalWrite(pin_backwards_right, LOW);
   digitalWrite(pin_backwards_left, LOW);
 }
+
+int filterExpFrontZone(int value) {
+  static int filteredValue = 0;
+
+  filteredValue += ((value << 4) - filteredValue) >> K;
+  return (filteredValue >> 4);
+}
+// int binarySearch(int arr[], int l, int r, int x)
+// {
+//     if (r >= l) {
+
+//         int mid = l + (r - l) / 2;
+ 
+//         // If the element is present at the middle
+//         // itself
+//         if (arr[mid] == x)
+//             return mid;
+ 
+//         // If element is smaller than mid, then
+//         // it can only be present in left subarray
+//         if (arr[mid] > x)
+//             return binarySearch(arr, l, mid - 1, x);
+ 
+//         // Else the element can only be present
+//         // in right subarray
+//         return binarySearch(arr, mid + 1, r, x);
+//     }
+ 
+//     // We reach here when element is not
+//     // present in array
+//     return l;
+// }
+// Iterative implementation of the binary search algorithm to return
+// the position of `target` in array `nums` of size `n`
+int binarySearch(int nums[], int n, int target)
+{
+    // search space is nums[low…high]
+    int low = 0, high = n - 1;
+ 
+    // loop till the search space is exhausted
+    while (low <= high)
+    {
+        // find the mid-value in the search space and
+        // compares it with the target
+ 
+        //int mid = (low + high)/2;    // overflow can happen
+         int mid = low + (high - low)/2;
+        // int mid = high - (high - low)/2;
+ 
+        // target value is found
+        if (target == nums[mid]) {
+            return mid;
+        }
+ 
+        // if the target is less than the middle element, discard all elements
+        // in the right search space, including the middle element
+        else if (target < nums[mid]) {
+            high = mid - 1;
+        }
+ 
+        // if the target is more than the middle element, discard all elements
+        // in the left search space, including the middle element
+        else {
+            low = mid + 1;
+        }
+    }
+ 
+    // target doesn't exist in the array
+    return low;
+}
+
 void limit()
 {
     if(pow_right_wheel < MIN_SPEED_VAL)
@@ -146,65 +175,7 @@ void limit()
       pow_left_wheel = 255;
     }
 }
-void  move_x()
-{
-  // Serial.print("NF_Interp_X:");
-  // Serial.print(interp_x);
-  interp_x = filterExpFrontZone(interp_x);
-   
-    // Serial.print(",");
-    // Serial.print("F_Interp_X:");
-    // Serial.print(interp_x);
-  if(obj_x <=  min_x)
-  {
-    // object is at left 
-    //mapped_x = map(obj_x, min_x_working_spectrum , min_x, speed_value, 0);
-    
-    // set left wheel 
-    digitalWrite(pin_forward_left, LOW);
-    digitalWrite(pin_backwards_left, HIGH);
 
-    // set right wheel 
-    digitalWrite(pin_forward_right, HIGH);
-    digitalWrite(pin_backwards_right, LOW);
-
-    Serial.println(" Loc left ");
-    pow_left_wheel = interp_x;
-    pow_right_wheel = interp_x;
-  }
-  else if(obj_x > max_x)
-  {
-    // object is at right 
-    //mapped_x = map(obj_x, max_x , max_x_working_spectrum, 0, speed_value);    
-      
-    // set left wheel 
-    digitalWrite(pin_forward_left, HIGH);
-    digitalWrite(pin_backwards_left, LOW);
-    // set right wheel 
-    digitalWrite(pin_forward_right, LOW);
-    digitalWrite(pin_backwards_right, HIGH);
-      
-    pow_left_wheel = interp_x;
-    pow_right_wheel = interp_x;
-
-    Serial.println(" Loc right ");
-  }
-  else{
-    // object is in front
-    // do not move
-    pow_left_wheel = 0;
-    pow_right_wheel = 0;
-
-    // set left wheel 
-    digitalWrite(pin_forward_left, LOW);
-    digitalWrite(pin_backwards_left, LOW);
-
-    // set right wheel 
-    digitalWrite(pin_forward_right, LOW);
-    digitalWrite(pin_backwards_right, LOW);    
-    Serial.println(" Loc front ");
-  }
-}
 void process_data()
 {
   obj_x = pixy.ccc.blocks[i].m_x;
@@ -212,14 +183,17 @@ void process_data()
 
   obj_width = filterExpMovingAverage(obj_width, 1);
   obj_x = filterExpMovingAverage(obj_x, 0);
-  int pos_x = binarySearch(D_X, 0, 10, obj_x);
-  int pos_w = binarySearch(D_W, 0, 10, obj_width);
+  // int pos_x = binarySearch(D_X, 0, 10, obj_x);
+  // int pos_w = binarySearch(D_W, 0, 10, obj_width);
+  int pos_x = binarySearch(D_X, 11, obj_x);
+  int pos_w = binarySearch(D_W, 11, obj_width);
   interp_x = R_X[pos_x - 1] + float((obj_x - D_X[pos_x - 1])) / float((D_X[pos_x] - D_X[pos_x - 1])) * (R_X[pos_x] - R_X[pos_x - 1]);
   interp_w = R_W[pos_w - 1] + (float((obj_width - D_W[pos_w - 1])) / float((D_W[pos_w] - D_W[pos_w - 1]))) * (R_W[pos_w] - R_W[pos_w - 1]);
   
+  // case when object is too close
   if (obj_width >= max_width)
   {
-    // case when object is too close
+    
     // move backwards
 
     // set left wheel 
@@ -252,9 +226,9 @@ void process_data()
     // }
     // end backwards
   }
+  // case when object is too far
   else if(obj_width <= min_width)
   {
-    // case when object is too far
     // move forward
 
     // set left wheel 
@@ -290,8 +264,8 @@ void process_data()
     }
     //end forward
   }
+  // case when object is at normal distance
   else {
-    // case when object is at normal distance
     pow_left_wheel = 0;
     pow_right_wheel = 0;
     move_x();
@@ -299,13 +273,75 @@ void process_data()
 
   limit();
 }
+void  move_x()
+{
+  // Serial.print("NF_Interp_X:");
+  // Serial.print(interp_x);
+  interp_x = filterExpFrontZone(interp_x);
+   
+    // Serial.print(",");
+    // Serial.print("F_Interp_X:");
+    // Serial.print(interp_x);
+  if(obj_x <=  min_x)
+  {
+    // object is at left 
+    //mapped_x = map(obj_x, min_x_working_spectrum , min_x, speed_value, 0);
+    
+    // set left wheel 
+    digitalWrite(pin_forward_left, LOW);
+    digitalWrite(pin_backwards_left, HIGH);
+    // set right wheel 
+    digitalWrite(pin_forward_right, HIGH);
+    digitalWrite(pin_backwards_right, LOW);
+    //digitalWrite(pin_forward_right, LOW);
+    Serial.println(" Loc left ");
+    pow_left_wheel = interp_x;
+    pow_right_wheel = interp_x;
+    //pow_right_wheel = 0;
+  }
+  else if(obj_x > max_x)
+  {
+    // object is at right 
+    //mapped_x = map(obj_x, max_x , max_x_working_spectrum, 0, speed_value);    
+      
+    // set left wheel 
+    digitalWrite(pin_forward_left, HIGH);
+    //digitalWrite(pin_forward_left, LOW);
+    digitalWrite(pin_backwards_left, LOW);
+    // set right wheel 
+    digitalWrite(pin_forward_right, LOW);
+    digitalWrite(pin_backwards_right, HIGH);
+      
+    pow_left_wheel = interp_x;
+    //pow_left_wheel = 0;
+    pow_right_wheel = interp_x;
 
+    Serial.println(" Loc right ");
+  }
+  else{
+    // object is in front
+    // do not move
+    pow_left_wheel = 0;
+    pow_right_wheel = 0;
+
+    // set left wheel 
+    digitalWrite(pin_forward_left, LOW);
+    digitalWrite(pin_backwards_left, LOW);
+
+    // set right wheel 
+    digitalWrite(pin_forward_right, LOW);
+    digitalWrite(pin_backwards_right, LOW);    
+    Serial.println(" Loc front ");
+  }
+}
 void loop() {
   // put your main code here, to run repeatedly:
   if (pixy.ccc.getBlocks() > 0)
   {
     process_data();  
-    pow_left_wheel = constrain(pow_left_wheel, 0, 255);
+    process_data();  
+    process_data();  
+    pow_left_wheel  = constrain(pow_left_wheel, 0, 255);
     pow_right_wheel = constrain(pow_right_wheel,0, 255);
     Serial.println();    
     Serial.print("Width:");
@@ -346,13 +382,10 @@ void loop() {
    // Serial.print(pixy.ccc.getBlocks());
     Serial.println("No object found!");
   }
-
-  
   
   // set speed for wheels
   analogWrite(pin_en_a, pow_right_wheel);
   analogWrite(pin_en_b, pow_left_wheel);
   // analogWrite(pin_en_a, 0);
   // analogWrite(pin_en_b, 0);
-  
 }
